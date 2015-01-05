@@ -26,11 +26,26 @@ void add_history(char* unused) {}
 #include <editline/readline.h>
 #include <editline/history.h>
 #endif
+#include "mpc.h"
 
-#define VERSIONINFO "clisp version 0.0.0.2"
+#define VERSIONINFO "clisp version 0.0.0.3"
 #define PROMPT "clisp>"
 
 int main(int argc, char ** argv) {
+	/* Define language */
+	mpc_parser_t* Number = mpc_new("number");
+	mpc_parser_t* Operator = mpc_new("operator");
+	mpc_parser_t* Expr = mpc_new("expr");
+	mpc_parser_t* Clisp = mpc_new("clisp");
+
+	mpca_lang(MPCA_LANG_DEFAULT,
+			"\
+				number : /-?[0-9]+/; \
+				operator : '+' | '-' | '*' | '/' ; \
+				expr : <number> | '(' <operator> <expr>+ ')' ; \
+				clisp : /^/ <operator> <expr>+ /$/ ; \
+			",
+			Number, Operator, Expr, Clisp);
 	/* Version and exit info */
 	puts(VERSIONINFO);
 	puts("Press ctrl+C to exit\n");
@@ -45,10 +60,21 @@ int main(int argc, char ** argv) {
 		add_history(line);
 
 		/* Echo it back - actual processing will be later added*/
-		printf("%s kay mhantos, Kapuskondyachi goshta sangu?\n", line);
+		mpc_result_t r;
+		if (mpc_parse("<stdin>", line, Clisp, &r)) {
+			/* Successful parsing */
+			mpc_ast_print(r.output);
+			mpc_ast_delete(r.output);
+		} else {
+			/* Syntax parsing */
+			mpc_err_print(r.error);
+			mpc_err_delete(r.error);
+		}
 
 		free(line);
 	}
 
+	/* Cleanup mpc */
+	mpc_cleanup(4, Number, Operator, Expr, Clisp);
 	return 0;
 }
