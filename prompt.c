@@ -32,61 +32,105 @@ void add_history(char* unused) {}
 #define VERSIONINFO "clisp version 0.0.1.0"
 #define PROMPT "clisp>"
 
-long eval_op(long x, char* op, long y) {
-	long r = x;
+enum {LVAL_NUM, LVAL_ERR};
+enum {LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM};
+
+typedef struct {
+	int type;
+	long num;
+	int err;
+} lval;
+
+lval lval_num(long x) {
+	lval v;
+	v.type = LVAL_NUM;
+	v.num = x;
+	return v;
+}
+
+lval lval_err(int x) {
+	lval v;
+	v.type = LVAL_ERR;
+	v.err = x;
+	return v;
+	}
+
+void lval_print(lval v) {
+	switch (v.type) {
+		case LVAL_NUM:
+			printf("%li", v.num);
+			break;
+		case LVAL_ERR:
+			if (v.err == LERR_DIV_ZERO) {
+				printf("Error : Division by zero");
+			} else if (v.err == LERR_BAD_OP) {
+				printf("Error : Invalid Operator");
+			} else if (v.err == LERR_BAD_NUM) {
+				printf("Error : Invalid number");
+			}
+			break;
+	}
+}
+
+void lval_println(lval v) {lval_print(v);putchar('\n');}
+
+lval eval_op(lval x, char* op, lval y) {
+	if (x.type == LVAL_ERR) {return x;}
+	if (y.type == LVAL_ERR) {return y;}
+	lval r = x;
 	if (strlen(op) > 0) {
 		switch (op[0]) {
 			case '+':
-				r = x + y;
+				r = lval_num(x.num + y.num);
 				break;
 			case '-':
-				r = x - y;
+				r = lval_num(x.num - y.num);
 				break;
 			case '*':
-				r = x * y;
+				r = lval_num(x.num * y.num);
 				break;
 			case '/':
-				r = x / y;
+				r = (y.num == 0) ? lval_err(LERR_DIV_ZERO) : lval_num(x.num / y.num);
 				break;
 			case '%':
-				r = x % y;
+				r = lval_num(x.num % y.num);
 				break;
 			case '^':
-				r = pow(x, y);
+				r = lval_num(pow(x.num,y.num));
 				break;
 			case 'm':
 				if (strstr(op, "min")) {
-					r = (x > y) ? y : x;
+					r = (x.num > y.num) ? y : x;
 				} else if (strstr(op, "max")) {
-					r = (x < y) ? y : x;
+					r = (x.num < y.num) ? y : x;
 				}
 		}
 	}
 	return r;
 }
 
-long eval_mod(long x, char* op) {
-	long r = x;
+lval eval_mod(lval x, char* op) {
+	lval r = x;
 	if (strlen(op) > 0) {
 		switch (op[0]) {
 			case '-':
-				r = -x;
+				r = lval_num(-x.num);
 				break;
 			case '~':
-				r = ~x;
+				r = lval_num(~x.num);
 				break;
 		}
 	}
 	return r;
 }
 
-long eval(mpc_ast_t* node) {
+lval eval(mpc_ast_t* node) {
 	if (strstr(node->tag, "number")) {
-		return atoi(node->contents);
+		return lval_num(atoi(node->contents));
 	}
 
 	char* op = node->children[1]->contents;
-	long x = eval(node->children[2]);
+	lval x = eval(node->children[2]);
 	if (strstr(node->children[1]->tag, "operator")) {
 		for (int i = 3; strstr(node->children[i]->tag, "expr"); i++) {
 			x = eval_op(x, op, eval(node->children[i]));
@@ -133,7 +177,7 @@ int main(int argc, char ** argv) {
 			/* Successful parsing */
 			/*mpc_ast_print(r.output);
 			mpc_ast_delete(r.output);*/
-			printf("%li\n", eval(r.output));
+			lval_println(eval(r.output));
 		} else {
 			/* Syntax parsing */
 			mpc_err_print(r.error);
