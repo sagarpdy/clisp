@@ -552,6 +552,11 @@ lval* builtin_def(lenv* e, lval* a)
     return lval_sexpr();
 }
 
+lval* builtin_exit(lenv* e, lval* a)
+{
+    return NULL;
+}
+
 void lenv_add_builtin(lenv* e, char* name, lbuiltin func)
 {
     lval* k = lval_sym(name);
@@ -577,6 +582,8 @@ void lenv_add_builtins(lenv* e)
     lenv_add_builtin(e, "-", builtin_sub);
     lenv_add_builtin(e, "*", builtin_mul);
     lenv_add_builtin(e, "/", builtin_div);
+    /* Shell Functions */
+    lenv_add_builtin(e, "exit", builtin_exit);
 }
 
 /* Evaluation */
@@ -695,8 +702,17 @@ int main(int argc, char ** argv)
               mpc_ast_delete(r.output);*/
             /*lval_println(eval(r.output));*/
             lval* x = lval_eval(e, lval_read(r.output));
-            lval_println(x);
-            lval_del(x);
+            if (x)
+            {
+                lval_println(x);
+                lval_del(x);
+            }
+            else
+            {
+                printf("Bye Bye\n");
+                free(line);
+                break;
+            }
         }
         else
         {
