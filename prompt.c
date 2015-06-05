@@ -679,7 +679,7 @@ int main(int argc, char ** argv)
               Number, Symbol, Expr, Clisp, Modifier, Sexpr, Qexpr);
     /* Version and exit info */
     puts(VERSIONINFO);
-    puts("Press ctrl+C to exit\n");
+    puts("Enter exit () to exit\n");
 
     lenv* e = lenv_new();
     lenv_add_builtins(e);
