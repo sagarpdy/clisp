@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "mpc.h"
+
 #define MAX_ERR (512)
 
 enum {LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR, LVAL_QEXPR, LVAL_FUN, LVAL_STR };
@@ -72,5 +74,5 @@ void lval_println(lval* v);
 
 char* ltype_name(int t);
 
-
+int lval_eq(lval* x, lval* y);
 #endif
